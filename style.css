@@ -1,0 +1,112 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #0f0f0f;
+    color: #ffffff;
+    min-height: 100vh;
+}
+
+.app {
+    width: 100%;
+    max-width: 800px;
+    margin: auto;
+    padding: 60px 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+header h1 {
+    font-size: 42px;
+    margin-bottom: 12px;
+}
+
+header p {
+    color: #999;
+    font-size: 17px;
+}
+
+.generator {
+    background: #1a1a1a;
+    border-radius: 20px;
+    padding: 30px;
+}
+
+.upload-area {
+    border: 2px dashed #444;
+    border-radius: 15px;
+    padding: 45px 20px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.upload-area .icon {
+    font-size: 50px;
+    margin-bottom: 15px;
+}
+
+.upload-area h2 {
+    margin-bottom: 10px;
+}
+
+.upload-area p {
+    color: #888;
+    margin-bottom: 20px;
+}
+
+.upload-button {
+    display: inline-block;
+    background: #ffffff;
+    color: #111;
+    padding: 12px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.prompt-area {
+    margin-top: 30px;
+}
+
+.prompt-area label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.prompt-area textarea {
+    width: 100%;
+    min-height: 120px;
+    resize: vertical;
+    border: 1px solid #444;
+    border-radius: 12px;
+    padding: 15px;
+    background: #111;
+    color: white;
+    font-size: 16px;
+    outline: none;
+}
+
+.generate-button {
+    width: 100%;
+    margin-top: 25px;
+    padding: 16px;
+    border: none;
+    border-radius: 12px;
+    background: white;
+    color: #111;
+    font-size: 17px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.generate-button:hover {
+    opacity: 0.85;
+}
