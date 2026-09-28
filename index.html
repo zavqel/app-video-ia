@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -7,36 +6,75 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>AI Video</title>
+
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <h1>AI Video</h1>
+    <main class="app">
 
-    <p>Transforme suas imagens em vídeos com inteligência artificial.</p>
+        <header>
+            <h1>AI Video</h1>
 
-    <hr>
+            <p>
+                Transforme suas imagens em vídeos com inteligência artificial.
+            </p>
+        </header>
 
-    <h2>Envie uma imagem</h2>
 
-    <input type="file" id="imageInput" accept="image/*">
+        <section class="generator">
 
-    <br><br>
+            <div class="upload-area">
 
-    <h2>O que você quer que aconteça?</h2>
+                <div class="icon">
+                    📷
+                </div>
 
-    <textarea
-        id="prompt"
-        placeholder="Ex: O gato começa a dançar..."
-        rows="5"
-        cols="50"
-    ></textarea>
+                <h2>Envie uma imagem</h2>
 
-    <br><br>
+                <p>
+                    Escolha uma foto para transformar em vídeo.
+                </p>
 
-    <button id="generateButton">
-        ✨ Gerar vídeo
-    </button>
+                <label class="upload-button">
+                    Escolher imagem
+
+                    <input
+                        type="file"
+                        id="imageInput"
+                        accept="image/*"
+                        hidden
+                    >
+                </label>
+
+            </div>
+
+
+            <div class="prompt-area">
+
+                <label for="prompt">
+                    O que você quer que aconteça?
+                </label>
+
+                <textarea
+                    id="prompt"
+                    placeholder="Ex: O gato começa a dançar..."
+                ></textarea>
+
+            </div>
+
+
+            <button
+                id="generateButton"
+                class="generate-button"
+            >
+                ✨ Gerar vídeo
+            </button>
+
+        </section>
+
+    </main>
 
 </body>
 
