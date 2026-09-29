@@ -1839,62 +1839,42 @@ async function carregarHistorico(
 // ==========================================
 
 async function verificarGeracoesPendentes() {
-
     try {
+        console.log("Procurando gerações pendentes...");
 
-        console.log(
-            "Procurando gerações pendentes..."
-        );
+        const response = await fetch(`${API_URL}/pending`);
+        const data = await response.json();
 
-        const response =
-            await fetch(
-                `${API_URL}/history`
-            );
-
-        const data =
-            await response.json();
-
-        if (
-            !response.ok ||
-            !data.sucesso
-        ) {
-
-            console.error(
-                "Não foi possível verificar gerações pendentes."
-            );
-
+        if (!response.ok || !data.sucesso) {
+            console.error("Não foi possível verificar gerações pendentes.");
             return;
         }
 
-        const videos =
-            data.videos || [];
+        const pendentes = data.pendentes || [];
 
-        /*
-            IMPORTANTE:
+        console.log("Gerações pendentes encontradas:", pendentes.length);
 
-            O /history atual mostra apenas as
-            gerações concluídas.
+        if (pendentes.length === 0) {
+            return;
+        }
 
-            Portanto, esta função tenta também
-            consultar os request_ids que estiverem
-            presentes no histórico recebido.
+        for (const geracao of pendentes) {
+            if (!geracao.request_id) {
+                continue;
+            }
 
-            Para uma recuperação completa de
-            gerações queued que ainda não aparecem
-            no /history, o Worker precisará depois
-            oferecer uma rota específica.
+            console.log(
+                "Retomando geração:",
+                geracao.request_id
+            );
 
-            Por enquanto, não fazemos chamadas
-            aleatórias para não consumir API.
-        */
-
-        console.log(
-            "Gerações encontradas no histórico:",
-            videos.length
-        );
+            await acompanharGeracaoPendente(
+                geracao.request_id,
+                true
+            );
+        }
 
     } catch (error) {
-
         console.error(
             "Erro ao verificar gerações pendentes:",
             error
