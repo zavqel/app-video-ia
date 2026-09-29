@@ -148,10 +148,11 @@ generateButton.addEventListener("click", async function () {
             !generationData.sucesso
         ) {
 
-            throw new Error(
-                generationData.erro ||
-                "Não foi possível salvar a geração."
-            );
+          throw new Error(
+    generationData.erro +
+    "\n\nDetalhes da Higgsfield:\n" +
+    JSON.stringify(generationData.detalhes, null, 2)
+);
 
         }
 
