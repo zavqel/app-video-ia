@@ -3,115 +3,55 @@ const uploadArea = document.querySelector(".upload-area");
 const promptInput = document.getElementById("prompt");
 const generateButton = document.getElementById("generateButton");
 
-const API_URL = "https://app-video-ia-api.app-video-ia.workers.dev";
+const API_URL =
+    "https://app-video-ia-api.app-video-ia.workers.dev";
 
 let selectedImage = null;
 
 
 // ==========================================
-// MOSTRAR VÍDEO INDIVIDUAL
+// ESCAPAR TEXTO PARA HTML
 // ==========================================
 
-function mostrarVideo(videoURL) {
+function escaparHTML(texto) {
 
-    // Remove vídeo de resultado anterior
-    const videoAnterior =
-        document.querySelector(".video-resultado");
+    const div =
+        document.createElement("div");
 
-    if (videoAnterior) {
-        videoAnterior.remove();
-    }
+    div.textContent =
+        texto || "";
 
-
-    // Cria o player
-    const video =
-        document.createElement("video");
-
-    video.className =
-        "video-resultado";
-
-    video.src =
-        videoURL;
-
-    video.controls =
-        true;
-
-    video.autoplay =
-        false;
-
-    video.playsInline =
-        true;
-
-
-    // Estilo
-    video.style.width =
-        "100%";
-
-    video.style.maxWidth =
-        "500px";
-
-    video.style.maxHeight =
-        "650px";
-
-    video.style.display =
-        "block";
-
-    video.style.margin =
-        "25px auto 0";
-
-    video.style.borderRadius =
-        "15px";
-
-
-    // Coloca na página
-    document
-        .querySelector(".generator")
-        .appendChild(video);
+    return div.innerHTML;
 }
 
 
 // ==========================================
-// CRIAR PLAYER PARA O HISTÓRICO
+// FORMATAR DATA
 // ==========================================
 
-function criarVideoHistorico(videoURL) {
+function formatarData(data) {
 
-    const video =
-        document.createElement("video");
+    if (!data) {
+        return "";
+    }
 
-    video.src =
-        videoURL;
+    const dataObj =
+        new Date(data);
 
-    video.controls =
-        true;
+    if (isNaN(dataObj.getTime())) {
+        return "";
+    }
 
-    video.autoplay =
-        false;
-
-    video.playsInline =
-        true;
-
-
-    video.style.width =
-        "100%";
-
-    video.style.maxWidth =
-        "500px";
-
-    video.style.maxHeight =
-        "650px";
-
-    video.style.display =
-        "block";
-
-    video.style.margin =
-        "0 auto";
-
-    video.style.borderRadius =
-        "15px";
-
-
-    return video;
+    return dataObj.toLocaleString(
+        "pt-BR",
+        {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        }
+    );
 }
 
 
@@ -126,19 +66,15 @@ imageInput.addEventListener(
         const file =
             imageInput.files[0];
 
-
         if (!file) {
             return;
         }
 
-
         selectedImage =
             file;
 
-
         const imageURL =
             URL.createObjectURL(file);
-
 
         uploadArea.innerHTML = `
             <img
@@ -158,6 +94,576 @@ imageInput.addEventListener(
         `;
     }
 );
+
+
+// ==========================================
+// BAIXAR VÍDEO
+// ==========================================
+
+async function baixarVideo(
+    videoURL,
+    botao
+) {
+
+    try {
+
+        const textoOriginal =
+            botao.textContent;
+
+        botao.disabled =
+            true;
+
+        botao.textContent =
+            "⏳ Baixando...";
+
+
+        const response =
+            await fetch(
+                videoURL
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Não foi possível baixar o vídeo."
+            );
+        }
+
+
+        const blob =
+            await response.blob();
+
+
+        const blobURL =
+            URL.createObjectURL(blob);
+
+
+        const link =
+            document.createElement("a");
+
+        link.href =
+            blobURL;
+
+        link.download =
+            "video-ia.mp4";
+
+
+        document.body.appendChild(
+            link
+        );
+
+        link.click();
+
+        link.remove();
+
+
+        URL.revokeObjectURL(
+            blobURL
+        );
+
+
+        botao.textContent =
+            "✅ Baixado!";
+
+
+        setTimeout(
+            function () {
+
+                botao.textContent =
+                    textoOriginal;
+
+                botao.disabled =
+                    false;
+
+            },
+            2000
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao baixar vídeo:",
+            error
+        );
+
+
+        botao.disabled =
+            false;
+
+        botao.textContent =
+            "⬇️ Baixar";
+
+
+        alert(
+            "Não foi possível baixar o vídeo."
+        );
+    }
+}
+
+
+// ==========================================
+// CRIAR CARD DO HISTÓRICO
+// ==========================================
+
+function criarCardVideo(
+    item,
+    ehNovo
+) {
+
+    if (!item.request_id) {
+
+        console.warn(
+            "Vídeo sem request_id:",
+            item
+        );
+
+        return null;
+    }
+
+
+    // URL do nosso Worker
+    const videoURL =
+        `${API_URL}/video?requestId=${encodeURIComponent(
+            item.request_id
+        )}`;
+
+
+    // Card
+    const card =
+        document.createElement("article");
+
+
+    card.className =
+        "video-card";
+
+
+    if (ehNovo) {
+
+        card.classList.add(
+            "novo"
+        );
+    }
+
+
+    // Cabeçalho
+    const topo =
+        document.createElement("div");
+
+    topo.className =
+        "video-card-topo";
+
+
+    const titulo =
+        document.createElement("div");
+
+    titulo.className =
+        "video-card-titulo";
+
+    titulo.textContent =
+        "🎬 Vídeo gerado";
+
+
+    topo.appendChild(
+        titulo
+    );
+
+
+    if (ehNovo) {
+
+        const etiqueta =
+            document.createElement("span");
+
+        etiqueta.className =
+            "video-card-novo";
+
+        etiqueta.textContent =
+            "✨ NOVO";
+
+        topo.appendChild(
+            etiqueta
+        );
+    }
+
+
+    card.appendChild(
+        topo
+    );
+
+
+    // ==========================================
+    // PLAYER
+    // ==========================================
+
+    const video =
+        document.createElement("video");
+
+    video.src =
+        videoURL;
+
+    video.controls =
+        true;
+
+    video.preload =
+        "metadata";
+
+    video.playsInline =
+        true;
+
+
+    card.appendChild(
+        video
+    );
+
+
+    // ==========================================
+    // INFORMAÇÕES
+    // ==========================================
+
+    const info =
+        document.createElement("div");
+
+    info.className =
+        "video-card-info";
+
+
+    // Data
+    const data =
+        document.createElement("div");
+
+    data.className =
+        "video-card-data";
+
+    data.textContent =
+        "📅 " +
+        formatarData(
+            item.created_at
+        );
+
+
+    info.appendChild(
+        data
+    );
+
+
+    // ==========================================
+    // PROMPT
+    // ==========================================
+
+    if (item.prompt) {
+
+        const detalhes =
+            document.createElement("details");
+
+        detalhes.className =
+            "video-card-prompt";
+
+
+        const summary =
+            document.createElement("summary");
+
+        summary.textContent =
+            "📝 Ver prompt";
+
+
+        const prompt =
+            document.createElement("p");
+
+        prompt.textContent =
+            item.prompt;
+
+
+        detalhes.appendChild(
+            summary
+        );
+
+        detalhes.appendChild(
+            prompt
+        );
+
+        info.appendChild(
+            detalhes
+        );
+    }
+
+
+    // ==========================================
+    // BOTÕES
+    // ==========================================
+
+    const acoes =
+        document.createElement("div");
+
+    acoes.className =
+        "video-card-acoes";
+
+
+    // Abrir
+    const abrir =
+        document.createElement("a");
+
+    abrir.href =
+        videoURL;
+
+    abrir.target =
+        "_blank";
+
+    abrir.rel =
+        "noopener";
+
+    abrir.textContent =
+        "▶️ Abrir";
+
+
+    // Baixar
+    const baixar =
+        document.createElement("button");
+
+    baixar.type =
+        "button";
+
+    baixar.textContent =
+        "⬇️ Baixar";
+
+
+    baixar.addEventListener(
+        "click",
+        function () {
+
+            baixarVideo(
+                videoURL,
+                baixar
+            );
+
+        }
+    );
+
+
+    acoes.appendChild(
+        abrir
+    );
+
+    acoes.appendChild(
+        baixar
+    );
+
+
+    info.appendChild(
+        acoes
+    );
+
+
+    card.appendChild(
+        info
+    );
+
+
+    return card;
+}
+
+
+// ==========================================
+// CARREGAR HISTÓRICO
+// ==========================================
+
+async function carregarHistorico(
+    requestIdNovo = null
+) {
+
+    try {
+
+        console.log(
+            "Buscando histórico de vídeos..."
+        );
+
+
+        const response =
+            await fetch(
+                `${API_URL}/history`
+            );
+
+
+        const data =
+            await response.json();
+
+
+        console.log(
+            "Histórico recebido:",
+            data
+        );
+
+
+        if (
+            !response.ok ||
+            !data.sucesso
+        ) {
+
+            console.error(
+                "Não foi possível carregar o histórico."
+            );
+
+            return;
+        }
+
+
+        const videos =
+            data.videos || [];
+
+
+        // ==========================================
+        // PROCURA / CRIA ÁREA
+        // ==========================================
+
+        let historico =
+            document.getElementById(
+                "historicoVideos"
+            );
+
+
+        if (!historico) {
+
+            historico =
+                document.createElement(
+                    "section"
+                );
+
+            historico.id =
+                "historicoVideos";
+
+
+            document
+                .querySelector(".generator")
+                .appendChild(
+                    historico
+                );
+        }
+
+
+        // Limpa
+        historico.innerHTML =
+            "";
+
+
+        // ==========================================
+        // TÍTULO
+        // ==========================================
+
+        const titulo =
+            document.createElement(
+                "div"
+            );
+
+        titulo.className =
+            "historico-titulo";
+
+
+        titulo.innerHTML = `
+            <h2>🎬 Meus vídeos</h2>
+            <p>
+                ${videos.length}
+                ${videos.length === 1
+                    ? "vídeo gerado"
+                    : "vídeos gerados"}
+            </p>
+        `;
+
+
+        historico.appendChild(
+            titulo
+        );
+
+
+        // ==========================================
+        // GRID
+        // ==========================================
+
+        const grid =
+            document.createElement(
+                "div"
+            );
+
+        grid.className =
+            "historico-grid";
+
+
+        // ==========================================
+        // ADICIONA OS VÍDEOS
+        // ==========================================
+
+        videos.forEach(
+            function (item, index) {
+
+                const ehNovo =
+                    requestIdNovo &&
+                    item.request_id ===
+                        requestIdNovo;
+
+
+                const card =
+                    criarCardVideo(
+                        item,
+                        ehNovo
+                    );
+
+
+                if (card) {
+
+                    grid.appendChild(
+                        card
+                    );
+                }
+
+            }
+        );
+
+
+        historico.appendChild(
+            grid
+        );
+
+
+        // ==========================================
+        // ROLA ATÉ O NOVO VÍDEO
+        // ==========================================
+
+        if (requestIdNovo) {
+
+            const cardNovo =
+                grid.querySelector(
+                    ".video-card.novo"
+                );
+
+
+            if (cardNovo) {
+
+                setTimeout(
+                    function () {
+
+                        cardNovo.scrollIntoView(
+                            {
+                                behavior:
+                                    "smooth",
+                                block:
+                                    "center"
+                            }
+                        );
+
+                    },
+                    200
+                );
+            }
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao carregar histórico:",
+            error
+        );
+    }
+}
 
 
 // ==========================================
@@ -202,14 +708,15 @@ generateButton.addEventListener(
 
 
             // ==========================================
-            // 1. ENVIA A IMAGEM
+            // 1. UPLOAD
             // ==========================================
 
             const uploadResponse =
                 await fetch(
                     `${API_URL}/upload`,
                     {
-                        method: "POST",
+                        method:
+                            "POST",
 
                         headers: {
                             "Content-Type":
@@ -245,7 +752,7 @@ generateButton.addEventListener(
 
 
             // ==========================================
-            // 2. PEGA A CHAVE DA IMAGEM
+            // 2. CHAVE DA IMAGEM
             // ==========================================
 
             const imageKey =
@@ -259,7 +766,7 @@ generateButton.addEventListener(
 
 
             // ==========================================
-            // 3. ENVIA PROMPT + IMAGEM
+            // 3. GERAÇÃO
             // ==========================================
 
             generateButton.textContent =
@@ -270,7 +777,8 @@ generateButton.addEventListener(
                 await fetch(
                     `${API_URL}/generate`,
                     {
-                        method: "POST",
+                        method:
+                            "POST",
 
                         headers: {
                             "Content-Type":
@@ -346,7 +854,9 @@ generateButton.addEventListener(
 
                 const statusResponse =
                     await fetch(
-                        `${API_URL}/status?requestId=${encodeURIComponent(requestId)}`
+                        `${API_URL}/status?requestId=${encodeURIComponent(
+                            requestId
+                        )}`
                     );
 
 
@@ -377,7 +887,7 @@ generateButton.addEventListener(
 
 
                 // ==========================================
-                // VÍDEO PRONTO
+                // PRONTO
                 // ==========================================
 
                 if (
@@ -388,18 +898,11 @@ generateButton.addEventListener(
                         "🎬 Vídeo pronto!";
 
 
-                    const videoURL =
-                        `${API_URL}/video?requestId=${encodeURIComponent(requestId)}`;
-
-
-                    // Mostra o vídeo recém-gerado
-                    mostrarVideo(
-                        videoURL
+                    // Recarrega todo o histórico
+                    // e destaca o novo vídeo
+                    await carregarHistorico(
+                        requestId
                     );
-
-
-                    // Atualiza o histórico
-                    await carregarHistorico();
 
 
                     generateButton.disabled =
@@ -430,7 +933,7 @@ generateButton.addEventListener(
 
 
                 // ==========================================
-                // AINDA PROCESSANDO
+                // PROCESSANDO
                 // ==========================================
 
                 console.log(
@@ -471,187 +974,6 @@ generateButton.addEventListener(
 
     }
 );
-
-
-// ==========================================
-// CARREGAR HISTÓRICO COMPLETO
-// ==========================================
-
-async function carregarHistorico() {
-
-    try {
-
-        console.log(
-            "Buscando histórico de vídeos..."
-        );
-
-
-        const response =
-            await fetch(
-                `${API_URL}/history`
-            );
-
-
-        const data =
-            await response.json();
-
-
-        console.log(
-            "Histórico recebido:",
-            data
-        );
-
-
-        if (
-            !response.ok ||
-            !data.sucesso
-        ) {
-
-            console.error(
-                "Não foi possível carregar o histórico."
-            );
-
-            return;
-        }
-
-
-        const videos =
-            data.videos || [];
-
-
-        if (
-            videos.length === 0
-        ) {
-
-            console.log(
-                "Nenhum vídeo encontrado no histórico."
-            );
-
-            return;
-        }
-
-
-        // ==========================================
-        // PROCURA A ÁREA DO HISTÓRICO
-        // ==========================================
-
-        let historico =
-            document.getElementById(
-                "historicoVideos"
-            );
-
-
-        // ==========================================
-        // CRIA A ÁREA SE NÃO EXISTIR
-        // ==========================================
-
-        if (!historico) {
-
-            historico =
-                document.createElement(
-                    "section"
-                );
-
-
-            historico.id =
-                "historicoVideos";
-
-
-            historico.style.marginTop =
-                "40px";
-
-
-            document
-                .querySelector(".generator")
-                .appendChild(
-                    historico
-                );
-        }
-
-
-        // ==========================================
-        // LIMPA O HISTÓRICO ANTERIOR
-        // ==========================================
-
-        historico.innerHTML = `
-            <h2
-                style="
-                    margin-bottom: 20px;
-                    text-align: center;
-                "
-            >
-                🎬 Meus vídeos
-            </h2>
-        `;
-
-
-        // ==========================================
-        // ADICIONA TODOS OS VÍDEOS
-        // ==========================================
-
-        videos.forEach(
-            function (item) {
-
-                // Precisamos do Request ID
-                if (
-                    !item.request_id
-                ) {
-
-                    console.warn(
-                        "Vídeo sem request_id:",
-                        item
-                    );
-
-                    return;
-                }
-
-
-                // Container de cada vídeo
-                const videoContainer =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                videoContainer.style.marginBottom =
-                    "35px";
-
-
-                // URL passa pelo nosso Worker
-                const videoURL =
-                    `${API_URL}/video?requestId=${encodeURIComponent(
-                        item.request_id
-                    )}`;
-
-
-                // Cria o player
-                const video =
-                    criarVideoHistorico(
-                        videoURL
-                    );
-
-
-                videoContainer.appendChild(
-                    video
-                );
-
-
-                historico.appendChild(
-                    videoContainer
-                );
-
-            }
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Erro ao carregar histórico:",
-            error
-        );
-    }
-}
 
 
 // ==========================================
