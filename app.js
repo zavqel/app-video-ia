@@ -3,15 +3,9 @@ const uploadArea = document.querySelector(".upload-area");
 const promptInput = document.getElementById("prompt");
 const generateButton = document.getElementById("generateButton");
 
+const API_URL = "https://app-video-ia-api.app-video-ia.workers.dev";
+
 let selectedImage = null;
-
-
-// ==========================================
-// CONFIGURAÇÃO
-// ==========================================
-
-const WORKER_URL =
-    "https://app-video-ia-api.app-video-ia.workers.dev";
 
 
 // ==========================================
@@ -50,7 +44,7 @@ imageInput.addEventListener("change", function () {
 
 
 // ==========================================
-// BOTÃO GERAR VÍDEO
+// GERAR VÍDEO
 // ==========================================
 
 generateButton.addEventListener("click", async function () {
@@ -67,17 +61,18 @@ generateButton.addEventListener("click", async function () {
         return;
     }
 
-    generateButton.disabled = true;
-    generateButton.textContent = "☁️ Enviando imagem...";
-
     try {
 
+        generateButton.disabled = true;
+        generateButton.textContent = "⏳ Enviando imagem...";
+
+
         // ==========================================
-        // ENVIA A IMAGEM PARA O WORKER
+        // 1. ENVIA A IMAGEM PARA O R2
         // ==========================================
 
-        const response = await fetch(
-            `${WORKER_URL}/upload`,
+        const uploadResponse = await fetch(
+            `${API_URL}/upload`,
             {
                 method: "POST",
                 headers: {
@@ -87,41 +82,110 @@ generateButton.addEventListener("click", async function () {
             }
         );
 
-        const resultado = await response.json();
+        const uploadData = await uploadResponse.json();
 
-        // ==========================================
-        // VERIFICA RESPOSTA
-        // ==========================================
+        console.log("Resposta do upload:", uploadData);
 
-        if (!response.ok || !resultado.sucesso) {
+
+        if (!uploadResponse.ok || !uploadData.sucesso) {
+
             throw new Error(
-                resultado.erro || "Erro ao enviar a imagem."
+                uploadData.erro || "Não foi possível enviar a imagem."
             );
+
         }
 
-        console.log("Upload realizado:", resultado);
 
-        generateButton.textContent = "✅ Imagem enviada!";
+        // ==========================================
+        // 2. PEGA A CHAVE DA IMAGEM
+        // ==========================================
 
-        alert(
-            "Imagem enviada com sucesso! 🚀\n\n" +
-            "Arquivo salvo no R2:\n" +
-            resultado.arquivo
+        const imageKey = uploadData.arquivo;
+
+
+        console.log("Imagem salva:", imageKey);
+
+
+        // ==========================================
+        // 3. ENVIA PROMPT + IMAGEM PARA O WORKER
+        // ==========================================
+
+        generateButton.textContent = "💾 Salvando geração...";
+
+
+        const generationResponse = await fetch(
+            `${API_URL}/test-db`,
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    prompt: prompt,
+
+                    imageKey: imageKey
+
+                })
+            }
         );
 
-    } catch (erro) {
 
-        console.error("Erro no upload:", erro);
+        const generationData =
+            await generationResponse.json();
 
-        alert(
-            "Não foi possível enviar a imagem.\n\n" +
-            "Erro: " + erro.message
+
+        console.log(
+            "Resposta do banco:",
+            generationData
         );
 
-    } finally {
+
+        if (
+            !generationResponse.ok ||
+            !generationData.sucesso
+        ) {
+
+            throw new Error(
+                generationData.erro ||
+                "Não foi possível salvar a geração."
+            );
+
+        }
+
+
+        // ==========================================
+        // SUCESSO
+        // ==========================================
 
         generateButton.disabled = false;
+
         generateButton.textContent = "✨ Gerar vídeo";
+
+
+        alert(
+            "Tudo certo! 🚀\n\n" +
+            "Imagem salva no R2.\n" +
+            "Prompt salvo no D1.\n\n" +
+            "Agora temos os dados necessários para chamar a IA."
+        );
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        generateButton.disabled = false;
+
+        generateButton.textContent = "✨ Gerar vídeo";
+
+
+        alert(
+            "Ocorreu um erro:\n\n" +
+            error.message
+        );
 
     }
 
