@@ -6,9 +6,17 @@ const generateButton = document.getElementById("generateButton");
 let selectedImage = null;
 
 
-// ================================
+// ==========================================
+// CONFIGURAÇÃO
+// ==========================================
+
+const WORKER_URL =
+    "https://app-video-ia-api.app-video-ia.workers.dev";
+
+
+// ==========================================
 // SELEÇÃO DA IMAGEM
-// ================================
+// ==========================================
 
 imageInput.addEventListener("change", function () {
 
@@ -41,11 +49,11 @@ imageInput.addEventListener("change", function () {
 });
 
 
-// ================================
+// ==========================================
 // BOTÃO GERAR VÍDEO
-// ================================
+// ==========================================
 
-generateButton.addEventListener("click", function () {
+generateButton.addEventListener("click", async function () {
 
     if (!selectedImage) {
         alert("Escolha uma imagem primeiro.");
@@ -60,20 +68,61 @@ generateButton.addEventListener("click", function () {
     }
 
     generateButton.disabled = true;
+    generateButton.textContent = "☁️ Enviando imagem...";
 
-    generateButton.textContent = "⏳ Preparando seu vídeo...";
+    try {
 
-    setTimeout(function () {
+        // ==========================================
+        // ENVIA A IMAGEM PARA O WORKER
+        // ==========================================
 
-        generateButton.disabled = false;
-
-        generateButton.textContent = "✨ Gerar vídeo";
-
-        alert(
-            "Tudo certo! A imagem e a descrição foram recebidas.\n\n" +
-            "A próxima etapa será conectar a inteligência artificial."
+        const response = await fetch(
+            `${WORKER_URL}/upload`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": selectedImage.type
+                },
+                body: selectedImage
+            }
         );
 
-    }, 2000);
+        const resultado = await response.json();
+
+        // ==========================================
+        // VERIFICA RESPOSTA
+        // ==========================================
+
+        if (!response.ok || !resultado.sucesso) {
+            throw new Error(
+                resultado.erro || "Erro ao enviar a imagem."
+            );
+        }
+
+        console.log("Upload realizado:", resultado);
+
+        generateButton.textContent = "✅ Imagem enviada!";
+
+        alert(
+            "Imagem enviada com sucesso! 🚀\n\n" +
+            "Arquivo salvo no R2:\n" +
+            resultado.arquivo
+        );
+
+    } catch (erro) {
+
+        console.error("Erro no upload:", erro);
+
+        alert(
+            "Não foi possível enviar a imagem.\n\n" +
+            "Erro: " + erro.message
+        );
+
+    } finally {
+
+        generateButton.disabled = false;
+        generateButton.textContent = "✨ Gerar vídeo";
+
+    }
 
 });
