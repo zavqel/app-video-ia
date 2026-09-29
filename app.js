@@ -114,7 +114,7 @@ generateButton.addEventListener("click", async function () {
 
 
         const generationResponse = await fetch(
-            `${API_URL}/test-db`,
+            `${API_URL}/generate`,
             {
                 method: "POST",
 
@@ -165,12 +165,13 @@ generateButton.addEventListener("click", async function () {
         generateButton.textContent = "✨ Gerar vídeo";
 
 
-        alert(
-            "Tudo certo! 🚀\n\n" +
-            "Imagem salva no R2.\n" +
-            "Prompt salvo no D1.\n\n" +
-            "Agora temos os dados necessários para chamar a IA."
-        );
+  alert(
+    "🚀 Vídeo enviado para a IA!\n\n" +
+    "Imagem salva no R2.\n" +
+    "Geração registrada no D1.\n\n" +
+    "Request ID da Higgsfield:\n" +
+    generationData.requestId
+);
 
 
     } catch (error) {
