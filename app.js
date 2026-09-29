@@ -226,11 +226,12 @@ async function verificarStatus() {
 
         video.playsInline = true;
 
-        video.style.width = "100%";
-
-        video.style.marginTop = "25px";
-
-        video.style.borderRadius = "15px";
+video.style.width = "100%";
+video.style.maxWidth = "500px";
+video.style.maxHeight = "650px";
+video.style.display = "block";
+video.style.margin = "25px auto 0";
+video.style.borderRadius = "15px";
 
 
         // Coloca o vídeo dentro da área principal
