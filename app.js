@@ -157,22 +157,133 @@ generateButton.addEventListener("click", async function () {
         }
 
 
-        // ==========================================
-        // SUCESSO
-        // ==========================================
+// ==========================================
+// AGUARDAR O VÍDEO FICAR PRONTO
+// ==========================================
+
+const requestId = generationData.requestId;
+
+if (!requestId) {
+    throw new Error("A Higgsfield não retornou o Request ID.");
+}
+
+
+generateButton.textContent = "⏳ Gerando vídeo...";
+
+
+// ==========================================
+// FUNÇÃO PARA CONSULTAR O STATUS
+// ==========================================
+
+async function verificarStatus() {
+
+    const statusResponse = await fetch(
+        `${API_URL}/status?requestId=${encodeURIComponent(requestId)}`
+    );
+
+    const statusData = await statusResponse.json();
+
+    console.log("Status da geração:", statusData);
+
+
+    if (!statusResponse.ok || !statusData.sucesso) {
+
+        throw new Error(
+            statusData.erro ||
+            "Não foi possível consultar o status do vídeo."
+        );
+
+    }
+
+
+    const status = statusData.status;
+
+
+    // ==========================================
+    // VÍDEO PRONTO
+    // ==========================================
+
+    if (status === "completed") {
+
+        generateButton.textContent = "🎬 Vídeo pronto!";
+
+
+        // Busca o vídeo pelo nosso Worker
+
+        const videoURL =
+            `${API_URL}/video?requestId=${encodeURIComponent(requestId)}`;
+
+
+        // Cria o player
+
+        const video = document.createElement("video");
+
+        video.src = videoURL;
+
+        video.controls = true;
+
+        video.autoplay = false;
+
+        video.playsInline = true;
+
+        video.style.width = "100%";
+
+        video.style.marginTop = "25px";
+
+        video.style.borderRadius = "15px";
+
+
+        // Coloca o vídeo dentro da área principal
+
+        document.querySelector(".generator")
+            .appendChild(video);
+
 
         generateButton.disabled = false;
 
         generateButton.textContent = "✨ Gerar vídeo";
 
 
-  alert(
-    "🚀 Vídeo enviado para a IA!\n\n" +
-    "Imagem salva no R2.\n" +
-    "Geração registrada no D1.\n\n" +
-    "Request ID da Higgsfield:\n" +
-    generationData.requestId
-);
+        return;
+
+    }
+
+
+    // ==========================================
+    // ERRO
+    // ==========================================
+
+    if (
+        status === "failed" ||
+        status === "nsfw"
+    ) {
+
+        throw new Error(
+            "A geração do vídeo terminou com status: " +
+            status
+        );
+
+    }
+
+
+    // ==========================================
+    // AINDA PROCESSANDO
+    // ==========================================
+
+    console.log(
+        "Vídeo ainda sendo processado..."
+    );
+
+
+    setTimeout(
+        verificarStatus,
+        5000
+    );
+
+}
+
+
+verificarStatus();
 
 
     } catch (error) {
