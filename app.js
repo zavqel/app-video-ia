@@ -19,8 +19,7 @@ function formatarData(data) {
         return "";
     }
 
-    const dataObj =
-        new Date(data);
+    const dataObj = new Date(data);
 
     if (isNaN(dataObj.getTime())) {
         return "";
@@ -47,15 +46,13 @@ imageInput.addEventListener(
     "change",
     function () {
 
-        const file =
-            imageInput.files[0];
+        const file = imageInput.files[0];
 
         if (!file) {
             return;
         }
 
-        selectedImage =
-            file;
+        selectedImage = file;
 
         const imageURL =
             URL.createObjectURL(file);
@@ -107,6 +104,383 @@ function obterThumbnailURL(thumbnailKey) {
 
 
 // ==========================================
+// PAINEL DE PROGRESSO
+// ==========================================
+
+let painelProgresso = null;
+let progressoAtual = 0;
+
+function criarPainelProgresso() {
+
+    if (painelProgresso) {
+        painelProgresso.remove();
+    }
+
+    painelProgresso =
+        document.createElement("div");
+
+    painelProgresso.id =
+        "painelProgressoGeracao";
+
+    painelProgresso.style.cssText = `
+        width: 100%;
+        margin: 18px 0 0 0;
+        padding: 20px;
+        box-sizing: border-box;
+        background: #111;
+        border: 1px solid #333;
+        border-radius: 14px;
+        text-align: center;
+    `;
+
+    painelProgresso.innerHTML = `
+        <div
+            style="
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                gap:10px;
+                font-size:18px;
+                font-weight:600;
+                margin-bottom:12px;
+            "
+        >
+            <span
+                id="iconeProgresso"
+                style="
+                    display:inline-block;
+                    animation:girarProgresso 1s linear infinite;
+                "
+            >
+                🔄
+            </span>
+
+            <span id="textoProgresso">
+                Preparando...
+            </span>
+        </div>
+
+        <div
+            style="
+                width:100%;
+                height:18px;
+                background:#2a2a2a;
+                border-radius:999px;
+                overflow:hidden;
+                border:1px solid #3a3a3a;
+            "
+        >
+            <div
+                id="barraProgresso"
+                style="
+                    width:0%;
+                    height:100%;
+                    background:linear-gradient(
+                        90deg,
+                        #ffffff,
+                        #bdbdbd
+                    );
+                    border-radius:999px;
+                    transition:width .6s ease;
+                "
+            ></div>
+        </div>
+
+        <div
+            style="
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                margin-top:10px;
+                font-size:14px;
+                color:#aaa;
+            "
+        >
+            <span id="detalheProgresso">
+                Enviando imagem...
+            </span>
+
+            <strong
+                id="porcentagemProgresso"
+                style="
+                    color:#fff;
+                    font-size:16px;
+                "
+            >
+                0%
+            </strong>
+        </div>
+
+        <div
+            style="
+                margin-top:10px;
+                font-size:12px;
+                color:#777;
+            "
+        >
+            Progresso estimado • A IA está processando sua imagem
+        </div>
+    `;
+
+    const estiloAnimacao =
+        document.createElement("style");
+
+    estiloAnimacao.id =
+        "estiloAnimacaoProgresso";
+
+    estiloAnimacao.textContent = `
+        @keyframes girarProgresso {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    `;
+
+    document.head.appendChild(
+        estiloAnimacao
+    );
+
+    generateButton.parentNode.insertBefore(
+        painelProgresso,
+        generateButton.nextSibling
+    );
+
+    progressoAtual = 0;
+
+    atualizarProgresso(
+        0,
+        "Preparando...",
+        "Enviando imagem..."
+    );
+}
+
+
+// ==========================================
+// ATUALIZAR PROGRESSO
+// ==========================================
+
+function atualizarProgresso(
+    porcentagem,
+    texto,
+    detalhe
+) {
+
+    if (!painelProgresso) {
+        return;
+    }
+
+    progressoAtual =
+        Math.max(
+            progressoAtual,
+            Math.min(100, porcentagem)
+        );
+
+    const barra =
+        document.getElementById(
+            "barraProgresso"
+        );
+
+    const porcentagemElemento =
+        document.getElementById(
+            "porcentagemProgresso"
+        );
+
+    const textoElemento =
+        document.getElementById(
+            "textoProgresso"
+        );
+
+    const detalheElemento =
+        document.getElementById(
+            "detalheProgresso"
+        );
+
+    if (barra) {
+
+        barra.style.width =
+            progressoAtual + "%";
+    }
+
+    if (porcentagemElemento) {
+
+        porcentagemElemento.textContent =
+            Math.round(progressoAtual) + "%";
+    }
+
+    if (textoElemento && texto) {
+
+        textoElemento.textContent =
+            texto;
+    }
+
+    if (detalheElemento && detalhe) {
+
+        detalheElemento.textContent =
+            detalhe;
+    }
+}
+
+
+// ==========================================
+// FINALIZAR PROGRESSO
+// ==========================================
+
+function finalizarProgresso(
+    sucesso = true
+) {
+
+    if (!painelProgresso) {
+        return;
+    }
+
+    if (sucesso) {
+
+        atualizarProgresso(
+            100,
+            "🎬 Vídeo pronto!",
+            "Sua geração foi concluída."
+        );
+
+        const icone =
+            document.getElementById(
+                "iconeProgresso"
+            );
+
+        if (icone) {
+
+            icone.style.animation =
+                "none";
+
+            icone.textContent =
+                "✅";
+        }
+
+    } else {
+
+        const icone =
+            document.getElementById(
+                "iconeProgresso"
+            );
+
+        if (icone) {
+
+            icone.style.animation =
+                "none";
+
+            icone.textContent =
+                "❌";
+        }
+    }
+}
+
+
+// ==========================================
+// REMOVER PAINEL DE PROGRESSO
+// ==========================================
+
+function removerPainelProgresso() {
+
+    if (painelProgresso) {
+
+        painelProgresso.remove();
+
+        painelProgresso =
+            null;
+    }
+
+    const estilo =
+        document.getElementById(
+            "estiloAnimacaoProgresso"
+        );
+
+    if (estilo) {
+        estilo.remove();
+    }
+}
+
+
+// ==========================================
+// PROGRESSO ESTIMADO DURANTE A GERAÇÃO
+// ==========================================
+
+let intervaloProgresso = null;
+let inicioGeracao = null;
+
+function iniciarProgressoEstimado() {
+
+    inicioGeracao =
+        Date.now();
+
+    if (intervaloProgresso) {
+
+        clearInterval(
+            intervaloProgresso
+        );
+    }
+
+    intervaloProgresso =
+        setInterval(
+            function () {
+
+                if (!painelProgresso) {
+                    return;
+                }
+
+                const tempoDecorrido =
+                    Date.now() -
+                    inicioGeracao;
+
+                /*
+                    Progresso estimado.
+
+                    Começa em aproximadamente 25%
+                    e vai se aproximando de 92%.
+
+                    Nunca chega a 100% sozinho.
+                */
+
+                const progressoEstimado =
+                    25 +
+                    67 *
+                    (
+                        1 -
+                        Math.exp(
+                            -tempoDecorrido /
+                            90000
+                        )
+                    );
+
+                atualizarProgresso(
+                    progressoEstimado,
+                    "⏳ Gerando vídeo...",
+                    "A inteligência artificial está animando sua imagem..."
+                );
+
+            },
+            2000
+        );
+}
+
+
+function pararProgressoEstimado() {
+
+    if (intervaloProgresso) {
+
+        clearInterval(
+            intervaloProgresso
+        );
+
+        intervaloProgresso =
+            null;
+    }
+}
+
+
+// ==========================================
 // BAIXAR VÍDEO
 // ==========================================
 
@@ -126,12 +500,10 @@ async function baixarVideo(
         botao.textContent =
             "⏳ Baixando...";
 
-
         const response =
             await fetch(
                 videoURL
             );
-
 
         if (!response.ok) {
 
@@ -140,46 +512,39 @@ async function baixarVideo(
             );
         }
 
-
         const blob =
             await response.blob();
 
-
         const blobURL =
-            URL.createObjectURL(blob);
-
+            URL.createObjectURL(
+                blob
+            );
 
         const link =
-            document.createElement("a");
-
+            document.createElement(
+                "a"
+            );
 
         link.href =
             blobURL;
 
-
         link.download =
             "video-ia.mp4";
-
 
         document.body.appendChild(
             link
         );
 
-
         link.click();
 
-
         link.remove();
-
 
         URL.revokeObjectURL(
             blobURL
         );
 
-
         botao.textContent =
             "✅ Baixado!";
-
 
         setTimeout(
             function () {
@@ -194,7 +559,6 @@ async function baixarVideo(
             2000
         );
 
-
     } catch (error) {
 
         console.error(
@@ -202,14 +566,11 @@ async function baixarVideo(
             error
         );
 
-
         botao.disabled =
             false;
 
-
         botao.textContent =
             "⬇️ Baixar";
-
 
         alert(
             "Não foi possível baixar o vídeo."
@@ -231,7 +592,6 @@ async function gerarThumbnail(
         requestId
     );
 
-
     return new Promise(
         function (resolve, reject) {
 
@@ -240,30 +600,22 @@ async function gerarThumbnail(
                     "video"
                 );
 
-
-            // Muito importante para permitir
-            // capturar o frame no canvas
             video.crossOrigin =
                 "anonymous";
-
 
             video.muted =
                 true;
 
-
             video.playsInline =
                 true;
 
-
             video.preload =
                 "auto";
-
 
             video.src =
                 obterVideoURL(
                     requestId
                 );
-
 
             video.style.position =
                 "fixed";
@@ -280,15 +632,12 @@ async function gerarThumbnail(
             video.style.opacity =
                 "0";
 
-
             document.body.appendChild(
                 video
             );
 
-
             let finalizado =
                 false;
-
 
             function limpar() {
 
@@ -301,9 +650,7 @@ async function gerarThumbnail(
                 video.load();
 
                 video.remove();
-
             }
-
 
             function erro(
                 mensagem
@@ -325,7 +672,6 @@ async function gerarThumbnail(
                 );
             }
 
-
             video.addEventListener(
                 "error",
                 function () {
@@ -340,7 +686,6 @@ async function gerarThumbnail(
                 }
             );
 
-
             video.addEventListener(
                 "loadedmetadata",
                 function () {
@@ -351,8 +696,6 @@ async function gerarThumbnail(
                         video.videoHeight
                     );
 
-
-                    // Primeiro frame
                     video.currentTime =
                         0;
 
@@ -362,7 +705,6 @@ async function gerarThumbnail(
                 }
             );
 
-
             video.addEventListener(
                 "seeked",
                 async function () {
@@ -370,7 +712,6 @@ async function gerarThumbnail(
                     if (finalizado) {
                         return;
                     }
-
 
                     try {
 
@@ -380,7 +721,6 @@ async function gerarThumbnail(
                         const altura =
                             video.videoHeight;
 
-
                         if (
                             !largura ||
                             !altura
@@ -389,15 +729,10 @@ async function gerarThumbnail(
                             throw new Error(
                                 "O vídeo não possui dimensões válidas."
                             );
-
                         }
 
-
-                        // Limita a thumbnail
-                        // a no máximo 800px de largura
                         const larguraMaxima =
                             800;
-
 
                         const escala =
                             Math.min(
@@ -406,12 +741,10 @@ async function gerarThumbnail(
                                     largura
                             );
 
-
                         const canvas =
                             document.createElement(
                                 "canvas"
                             );
-
 
                         canvas.width =
                             Math.round(
@@ -419,19 +752,16 @@ async function gerarThumbnail(
                                 escala
                             );
 
-
                         canvas.height =
                             Math.round(
                                 altura *
                                 escala
                             );
 
-
                         const contexto =
                             canvas.getContext(
                                 "2d"
                             );
-
 
                         contexto.drawImage(
                             video,
@@ -440,7 +770,6 @@ async function gerarThumbnail(
                             canvas.width,
                             canvas.height
                         );
-
 
                         const blob =
                             await new Promise(
@@ -457,26 +786,18 @@ async function gerarThumbnail(
                                 }
                             );
 
-
                         if (!blob) {
 
                             throw new Error(
                                 "Não foi possível criar a imagem da thumbnail."
                             );
-
                         }
-
 
                         console.log(
                             "Thumbnail criada:",
                             blob.size,
                             "bytes"
                         );
-
-
-                        // ==========================================
-                        // ENVIA THUMBNAIL PARA O WORKER
-                        // ==========================================
 
                         const response =
                             await fetch(
@@ -497,16 +818,13 @@ async function gerarThumbnail(
                                 }
                             );
 
-
                         const data =
                             await response.json();
-
 
                         console.log(
                             "Resposta da thumbnail:",
                             data
                         );
-
 
                         if (
                             !response.ok ||
@@ -517,28 +835,22 @@ async function gerarThumbnail(
                                 data.erro ||
                                 "Não foi possível salvar a thumbnail."
                             );
-
                         }
-
 
                         finalizado =
                             true;
 
-
                         limpar();
-
 
                         resolve(
                             data.thumbnail_key
                         );
-
 
                     } catch (error) {
 
                         erro(
                             error.message
                         );
-
                     }
 
                 },
@@ -546,7 +858,6 @@ async function gerarThumbnail(
                     once: true
                 }
             );
-
         }
     );
 }
@@ -562,62 +873,48 @@ function mostrarVideoNoCard(
     botao
 ) {
 
-    // Verifica se já existe
     let video =
         card.querySelector(
             ".video-card-player"
         );
 
-
     if (video) {
 
-        if (
-            video.paused
-        ) {
+        if (video.paused) {
 
             video.play()
                 .catch(
                     function () {}
                 );
-
         }
 
         return;
     }
-
 
     video =
         document.createElement(
             "video"
         );
 
-
     video.className =
         "video-card-player";
-
 
     video.src =
         videoURL;
 
-
     video.controls =
         true;
-
 
     video.playsInline =
         true;
 
-
     video.preload =
         "metadata";
 
-
-    // Insere antes das informações
     const info =
         card.querySelector(
             ".video-card-info"
         );
-
 
     if (info) {
 
@@ -631,33 +928,24 @@ function mostrarVideoNoCard(
         card.appendChild(
             video
         );
-
     }
 
-
-    // Remove thumbnail visual
     const thumbnail =
         card.querySelector(
             ".video-card-thumbnail"
         );
 
-
     if (thumbnail) {
 
         thumbnail.style.display =
             "none";
-
     }
 
-
-    // Troca botão
     if (botao) {
 
         botao.textContent =
             "⏸️ Ocultar";
-
     }
-
 
     video.addEventListener(
         "loadeddata",
@@ -695,26 +983,18 @@ function criarCardVideo(
         return null;
     }
 
-
     const videoURL =
         obterVideoURL(
             item.request_id
         );
-
-
-    // ==========================================
-    // CARD
-    // ==========================================
 
     const card =
         document.createElement(
             "article"
         );
 
-
     card.className =
         "video-card";
-
 
     if (ehNovo) {
 
@@ -722,7 +1002,6 @@ function criarCardVideo(
             "novo"
         );
     }
-
 
     // ==========================================
     // CABEÇALHO
@@ -733,29 +1012,23 @@ function criarCardVideo(
             "div"
         );
 
-
     topo.className =
         "video-card-topo";
-
 
     const titulo =
         document.createElement(
             "div"
         );
 
-
     titulo.className =
         "video-card-titulo";
-
 
     titulo.textContent =
         "🎬 Vídeo gerado";
 
-
     topo.appendChild(
         titulo
     );
-
 
     if (ehNovo) {
 
@@ -764,25 +1037,20 @@ function criarCardVideo(
                 "span"
             );
 
-
         etiqueta.className =
             "video-card-novo";
 
-
         etiqueta.textContent =
             "✨ NOVO";
-
 
         topo.appendChild(
             etiqueta
         );
     }
 
-
     card.appendChild(
         topo
     );
-
 
     // ==========================================
     // ÁREA DA THUMBNAIL
@@ -793,33 +1061,24 @@ function criarCardVideo(
             "div"
         );
 
-
     thumbnailArea.className =
         "video-card-thumbnail";
 
-
-    // Imagem
     const thumbnail =
         document.createElement(
             "img"
         );
 
-
     thumbnail.alt =
         "Thumbnail do vídeo";
-
 
     thumbnail.loading =
         "lazy";
 
-
     thumbnail.decoding =
         "async";
 
-
-    if (
-        item.thumbnail_key
-    ) {
+    if (item.thumbnail_key) {
 
         thumbnail.src =
             obterThumbnailURL(
@@ -827,9 +1086,6 @@ function criarCardVideo(
             );
 
     } else {
-
-        // Placeholder enquanto a thumbnail
-        // ainda está sendo criada
 
         thumbnail.src =
             "data:image/svg+xml;charset=UTF-8," +
@@ -845,6 +1101,7 @@ function criarCardVideo(
                         height="600"
                         fill="#111"
                     />
+
                     <text
                         x="400"
                         y="300"
@@ -858,43 +1115,33 @@ function criarCardVideo(
                     </text>
                 </svg>
             `);
-
     }
-
 
     thumbnailArea.appendChild(
         thumbnail
     );
 
-
-    // Botão central
     const assistirCentral =
         document.createElement(
             "button"
         );
 
-
     assistirCentral.type =
         "button";
-
 
     assistirCentral.className =
         "video-thumbnail-play";
 
-
     assistirCentral.textContent =
         "▶";
-
 
     thumbnailArea.appendChild(
         assistirCentral
     );
 
-
     card.appendChild(
         thumbnailArea
     );
-
 
     // ==========================================
     // INFORMAÇÕES
@@ -905,21 +1152,16 @@ function criarCardVideo(
             "div"
         );
 
-
     info.className =
         "video-card-info";
 
-
-    // Data
     const data =
         document.createElement(
             "div"
         );
 
-
     data.className =
         "video-card-data";
-
 
     data.textContent =
         "📅 " +
@@ -927,11 +1169,9 @@ function criarCardVideo(
             item.created_at
         );
 
-
     info.appendChild(
         data
     );
-
 
     // ==========================================
     // PROMPT
@@ -944,46 +1184,37 @@ function criarCardVideo(
                 "details"
             );
 
-
         detalhes.className =
             "video-card-prompt";
-
 
         const summary =
             document.createElement(
                 "summary"
             );
 
-
         summary.textContent =
             "📝 Ver prompt";
-
 
         const prompt =
             document.createElement(
                 "p"
             );
 
-
         prompt.textContent =
             item.prompt;
-
 
         detalhes.appendChild(
             summary
         );
 
-
         detalhes.appendChild(
             prompt
         );
-
 
         info.appendChild(
             detalhes
         );
     }
-
 
     // ==========================================
     // BOTÕES
@@ -994,10 +1225,8 @@ function criarCardVideo(
             "div"
         );
 
-
     acoes.className =
         "video-card-acoes";
-
 
     // ==========================================
     // ASSISTIR
@@ -1008,14 +1237,11 @@ function criarCardVideo(
             "button"
         );
 
-
     assistir.type =
         "button";
 
-
     assistir.textContent =
         "▶️ Assistir";
-
 
     assistir.addEventListener(
         "click",
@@ -1026,10 +1252,7 @@ function criarCardVideo(
                     ".video-card-player"
                 );
 
-
-            if (
-                videoExistente
-            ) {
+            if (videoExistente) {
 
                 if (
                     videoExistente.style.display ===
@@ -1051,23 +1274,18 @@ function criarCardVideo(
 
                     assistir.textContent =
                         "▶️ Assistir";
-
                 }
-
 
                 return;
             }
-
 
             mostrarVideoNoCard(
                 card,
                 videoURL,
                 assistir
             );
-
         }
     );
-
 
     // ==========================================
     // ABRIR
@@ -1078,22 +1296,17 @@ function criarCardVideo(
             "a"
         );
 
-
     abrir.href =
         videoURL;
-
 
     abrir.target =
         "_blank";
 
-
     abrir.rel =
         "noopener";
 
-
     abrir.textContent =
         "↗️ Abrir";
-
 
     // ==========================================
     // BAIXAR
@@ -1104,14 +1317,11 @@ function criarCardVideo(
             "button"
         );
 
-
     baixar.type =
         "button";
 
-
     baixar.textContent =
         "⬇️ Baixar";
-
 
     baixar.addEventListener(
         "click",
@@ -1121,35 +1331,28 @@ function criarCardVideo(
                 videoURL,
                 baixar
             );
-
         }
     );
-
 
     acoes.appendChild(
         assistir
     );
 
-
     acoes.appendChild(
         abrir
     );
-
 
     acoes.appendChild(
         baixar
     );
 
-
     info.appendChild(
         acoes
     );
 
-
     card.appendChild(
         info
     );
-
 
     // ==========================================
     // CLICAR NA THUMBNAIL
@@ -1164,10 +1367,8 @@ function criarCardVideo(
                 videoURL,
                 assistir
             );
-
         }
     );
-
 
     return card;
 }
@@ -1182,22 +1383,13 @@ async function garantirThumbnail(
     card
 ) {
 
-    // Já existe
-    if (
-        item.thumbnail_key
-    ) {
-
+    if (item.thumbnail_key) {
         return;
     }
 
-
-    if (
-        !item.request_id
-    ) {
-
+    if (!item.request_id) {
         return;
     }
-
 
     try {
 
@@ -1206,24 +1398,19 @@ async function garantirThumbnail(
                 item.request_id
             );
 
-
         if (!thumbnailKey) {
             return;
         }
-
 
         console.log(
             "Thumbnail salva:",
             thumbnailKey
         );
 
-
-        // Atualiza a imagem do card
         const thumbnail =
             card.querySelector(
                 ".video-card-thumbnail img"
             );
-
 
         if (thumbnail) {
 
@@ -1231,9 +1418,7 @@ async function garantirThumbnail(
                 obterThumbnailURL(
                     thumbnailKey
                 );
-
         }
-
 
     } catch (error) {
 
@@ -1241,7 +1426,6 @@ async function garantirThumbnail(
             "Erro ao criar thumbnail:",
             error
         );
-
     }
 }
 
@@ -1260,22 +1444,18 @@ async function carregarHistorico(
             "Buscando histórico de vídeos..."
         );
 
-
         const response =
             await fetch(
                 `${API_URL}/history`
             );
 
-
         const data =
             await response.json();
-
 
         console.log(
             "Histórico recebido:",
             data
         );
-
 
         if (
             !response.ok ||
@@ -1289,20 +1469,13 @@ async function carregarHistorico(
             return;
         }
 
-
         const videos =
             data.videos || [];
-
-
-        // ==========================================
-        // PROCURA / CRIA ÁREA
-        // ==========================================
 
         let historico =
             document.getElementById(
                 "historicoVideos"
             );
-
 
         if (!historico) {
 
@@ -1311,10 +1484,8 @@ async function carregarHistorico(
                     "section"
                 );
 
-
             historico.id =
                 "historicoVideos";
-
 
             document
                 .querySelector(".generator")
@@ -1323,25 +1494,16 @@ async function carregarHistorico(
                 );
         }
 
-
-        // Limpa
         historico.innerHTML =
             "";
-
-
-        // ==========================================
-        // TÍTULO
-        // ==========================================
 
         const titulo =
             document.createElement(
                 "div"
             );
 
-
         titulo.className =
             "historico-titulo";
-
 
         titulo.innerHTML = `
             <h2>🎬 Meus vídeos</h2>
@@ -1356,34 +1518,21 @@ async function carregarHistorico(
             </p>
         `;
 
-
         historico.appendChild(
             titulo
         );
-
-
-        // ==========================================
-        // GRID
-        // ==========================================
 
         const grid =
             document.createElement(
                 "div"
             );
 
-
         grid.className =
             "historico-grid";
-
 
         historico.appendChild(
             grid
         );
-
-
-        // ==========================================
-        // CRIA CARDS
-        // ==========================================
 
         videos.forEach(
             function (item) {
@@ -1393,54 +1542,48 @@ async function carregarHistorico(
                     item.request_id ===
                         requestIdNovo;
 
-
                 const card =
                     criarCardVideo(
                         item,
                         ehNovo
                     );
 
-
                 if (!card) {
                     return;
                 }
-
 
                 grid.appendChild(
                     card
                 );
 
+                /*
+                    Para o vídeo novo, a thumbnail
+                    será criada separadamente no
+                    fluxo de geração.
 
-                // Se não tem thumbnail,
-                // cria automaticamente.
+                    Isso evita duas gerações de
+                    thumbnail ao mesmo tempo.
+                */
+
                 if (
-                    !item.thumbnail_key
+                    !item.thumbnail_key &&
+                    !ehNovo
                 ) {
 
                     garantirThumbnail(
                         item,
                         card
                     );
-
                 }
-
             }
         );
 
-
-        // ==========================================
-        // ROLAR ATÉ O NOVO
-        // ==========================================
-
-        if (
-            requestIdNovo
-        ) {
+        if (requestIdNovo) {
 
             const cardNovo =
                 grid.querySelector(
                     ".video-card.novo"
                 );
-
 
             if (cardNovo) {
 
@@ -1460,11 +1603,8 @@ async function carregarHistorico(
                     },
                     200
                 );
-
             }
-
         }
-
 
     } catch (error) {
 
@@ -1472,7 +1612,6 @@ async function carregarHistorico(
             "Erro ao carregar histórico:",
             error
         );
-
     }
 }
 
@@ -1494,10 +1633,8 @@ generateButton.addEventListener(
             return;
         }
 
-
         const prompt =
             promptInput.value.trim();
-
 
         if (!prompt) {
 
@@ -1508,15 +1645,21 @@ generateButton.addEventListener(
             return;
         }
 
-
         try {
 
             generateButton.disabled =
                 true;
 
+            criarPainelProgresso();
+
+            atualizarProgresso(
+                5,
+                "📤 Enviando imagem...",
+                "Preparando sua imagem para a IA..."
+            );
 
             generateButton.textContent =
-                "⏳ Enviando imagem...";
+                "⏳ Processando...";
 
 
             // ==========================================
@@ -1540,16 +1683,13 @@ generateButton.addEventListener(
                     }
                 );
 
-
             const uploadData =
                 await uploadResponse.json();
-
 
             console.log(
                 "Resposta do upload:",
                 uploadData
             );
-
 
             if (
                 !uploadResponse.ok ||
@@ -1560,31 +1700,32 @@ generateButton.addEventListener(
                     uploadData.erro ||
                     "Não foi possível enviar a imagem."
                 );
-
             }
-
-
-            // ==========================================
-            // 2. CHAVE DA IMAGEM
-            // ==========================================
 
             const imageKey =
                 uploadData.arquivo;
-
 
             console.log(
                 "Imagem salva:",
                 imageKey
             );
 
+            atualizarProgresso(
+                15,
+                "📤 Imagem enviada!",
+                "Iniciando a geração do vídeo..."
+            );
+
 
             // ==========================================
-            // 3. GERAÇÃO
+            // 2. GERAÇÃO
             // ==========================================
 
-            generateButton.textContent =
-                "💾 Salvando geração...";
-
+            atualizarProgresso(
+                20,
+                "🚀 Enviando solicitação...",
+                "A IA está preparando a geração..."
+            );
 
             const generationResponse =
                 await fetch(
@@ -1606,21 +1747,17 @@ generateButton.addEventListener(
 
                                 imageKey:
                                     imageKey
-
                             })
                     }
                 );
 
-
             const generationData =
                 await generationResponse.json();
-
 
             console.log(
                 "Resposta do banco:",
                 generationData
             );
-
 
             if (
                 !generationResponse.ok ||
@@ -1636,36 +1773,50 @@ generateButton.addEventListener(
                         2
                     )
                 );
-
             }
-
-
-            // ==========================================
-            // REQUEST ID
-            // ==========================================
 
             const requestId =
                 generationData.requestId;
-
 
             if (!requestId) {
 
                 throw new Error(
                     "A Higgsfield não retornou o Request ID."
                 );
-
             }
 
+            console.log(
+                "Request ID:",
+                requestId
+            );
 
-            generateButton.textContent =
-                "⏳ Gerando vídeo...";
+            atualizarProgresso(
+                25,
+                "⏳ Gerando vídeo...",
+                "A inteligência artificial começou a trabalhar."
+            );
+
+            iniciarProgressoEstimado();
 
 
             // ==========================================
-            // CONSULTAR STATUS
+            // 3. CONSULTAR STATUS
             // ==========================================
 
-            async function verificarStatus() {
+            let videoConcluido =
+                false;
+
+            while (!videoConcluido) {
+
+                await new Promise(
+                    function (resolve) {
+
+                        setTimeout(
+                            resolve,
+                            5000
+                        );
+                    }
+                );
 
                 const statusResponse =
                     await fetch(
@@ -1674,16 +1825,13 @@ generateButton.addEventListener(
                         )}`
                     );
 
-
                 const statusData =
                     await statusResponse.json();
-
 
                 console.log(
                     "Status da geração:",
                     statusData
                 );
-
 
                 if (
                     !statusResponse.ok ||
@@ -1694,9 +1842,7 @@ generateButton.addEventListener(
                         statusData.erro ||
                         "Não foi possível consultar o status do vídeo."
                     );
-
                 }
-
 
                 const status =
                     statusData.status;
@@ -1710,18 +1856,32 @@ generateButton.addEventListener(
                     status === "completed"
                 ) {
 
+                    videoConcluido =
+                        true;
+
+                    pararProgressoEstimado();
+
+                    atualizarProgresso(
+                        96,
+                        "🎬 Vídeo finalizado!",
+                        "Preparando a prévia do seu vídeo..."
+                    );
+
                     generateButton.textContent =
                         "🎬 Vídeo pronto!";
 
 
-                    // Primeiro atualiza o histórico
+                    // ==========================================
+                    // ATUALIZA HISTÓRICO
+                    // ==========================================
+
                     await carregarHistorico(
                         requestId
                     );
 
 
                     // ==========================================
-                    // CRIA THUMBNAIL DO NOVO VÍDEO
+                    // CRIA THUMBNAIL
                     // ==========================================
 
                     try {
@@ -1730,18 +1890,19 @@ generateButton.addEventListener(
                             "Criando thumbnail do novo vídeo..."
                         );
 
+                        atualizarProgresso(
+                            98,
+                            "🖼️ Criando prévia...",
+                            "Gerando a thumbnail do vídeo..."
+                        );
 
                         await gerarThumbnail(
                             requestId
                         );
 
-
-                        // Recarrega o histórico para
-                        // buscar a thumbnail salva
                         await carregarHistorico(
                             requestId
                         );
-
 
                     } catch (thumbnailError) {
 
@@ -1749,17 +1910,31 @@ generateButton.addEventListener(
                             "Erro ao criar thumbnail do novo vídeo:",
                             thumbnailError
                         );
-
                     }
 
+
+                    // ==========================================
+                    // 100%
+                    // ==========================================
+
+                    finalizarProgresso(
+                        true
+                    );
 
                     generateButton.disabled =
                         false;
 
-
                     generateButton.textContent =
                         "✨ Gerar vídeo";
 
+                    setTimeout(
+                        function () {
+
+                            removerPainelProgresso();
+
+                        },
+                        2500
+                    );
 
                     return;
                 }
@@ -1778,7 +1953,6 @@ generateButton.addEventListener(
                         "A geração do vídeo terminou com status: " +
                         status
                     );
-
                 }
 
 
@@ -1786,20 +1960,16 @@ generateButton.addEventListener(
                 // PROCESSANDO
                 // ==========================================
 
+                atualizarProgresso(
+                    progressoAtual,
+                    "⏳ Gerando vídeo...",
+                    "A IA ainda está processando sua imagem..."
+                );
+
                 console.log(
                     "Vídeo ainda sendo processado..."
                 );
-
-
-                setTimeout(
-                    verificarStatus,
-                    5000
-                );
-
             }
-
-
-            verificarStatus();
 
 
         } catch (error) {
@@ -1808,22 +1978,41 @@ generateButton.addEventListener(
                 error
             );
 
+            pararProgressoEstimado();
+
+            finalizarProgresso(
+                false
+            );
 
             generateButton.disabled =
                 false;
 
-
             generateButton.textContent =
                 "✨ Gerar vídeo";
 
+            if (painelProgresso) {
+
+                atualizarProgresso(
+                    progressoAtual,
+                    "❌ Não foi possível concluir",
+                    "Ocorreu um erro durante a geração."
+                );
+
+                setTimeout(
+                    function () {
+
+                        removerPainelProgresso();
+
+                    },
+                    3000
+                );
+            }
 
             alert(
                 "Ocorreu um erro:\n\n" +
                 error.message
             );
-
         }
-
     }
 );
 
