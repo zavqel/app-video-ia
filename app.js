@@ -404,16 +404,21 @@ function removerPainelProgresso() {
 
 
 // ==========================================
-// PROGRESSO ESTIMADO DURANTE A GERAÇÃO
+// PROGRESSO ESTIMADO
 // ==========================================
 
 let intervaloProgresso = null;
 let inicioGeracao = null;
 
-function iniciarProgressoEstimado() {
+function iniciarProgressoEstimado(
+    progressoInicial = 25
+) {
 
     inicioGeracao =
         Date.now();
+
+    progressoAtual =
+        progressoInicial;
 
     if (intervaloProgresso) {
 
@@ -434,18 +439,12 @@ function iniciarProgressoEstimado() {
                     Date.now() -
                     inicioGeracao;
 
-                /*
-                    Progresso estimado.
-
-                    Começa em aproximadamente 25%
-                    e vai se aproximando de 92%.
-
-                    Nunca chega a 100% sozinho.
-                */
-
                 const progressoEstimado =
-                    25 +
-                    67 *
+                    progressoInicial +
+                    (
+                        92 -
+                        progressoInicial
+                    ) *
                     (
                         1 -
                         Math.exp(
@@ -580,7 +579,7 @@ async function baixarVideo(
 
 
 // ==========================================
-// GERAR THUMBNAIL DO VÍDEO
+// GERAR THUMBNAIL
 // ==========================================
 
 async function gerarThumbnail(
@@ -864,7 +863,7 @@ async function gerarThumbnail(
 
 
 // ==========================================
-// MOSTRAR VÍDEO DENTRO DO CARD
+// MOSTRAR VÍDEO NO CARD
 // ==========================================
 
 function mostrarVideoNoCard(
@@ -965,7 +964,7 @@ function mostrarVideoNoCard(
 
 
 // ==========================================
-// CRIAR CARD DO HISTÓRICO
+// CRIAR CARD
 // ==========================================
 
 function criarCardVideo(
@@ -1053,7 +1052,7 @@ function criarCardVideo(
     );
 
     // ==========================================
-    // ÁREA DA THUMBNAIL
+    // THUMBNAIL
     // ==========================================
 
     const thumbnailArea =
@@ -1228,10 +1227,6 @@ function criarCardVideo(
     acoes.className =
         "video-card-acoes";
 
-    // ==========================================
-    // ASSISTIR
-    // ==========================================
-
     const assistir =
         document.createElement(
             "button"
@@ -1287,10 +1282,6 @@ function criarCardVideo(
         }
     );
 
-    // ==========================================
-    // ABRIR
-    // ==========================================
-
     const abrir =
         document.createElement(
             "a"
@@ -1307,10 +1298,6 @@ function criarCardVideo(
 
     abrir.textContent =
         "↗️ Abrir";
-
-    // ==========================================
-    // BAIXAR
-    // ==========================================
 
     const baixar =
         document.createElement(
@@ -1353,10 +1340,6 @@ function criarCardVideo(
     card.appendChild(
         info
     );
-
-    // ==========================================
-    // CLICAR NA THUMBNAIL
-    // ==========================================
 
     assistirCentral.addEventListener(
         "click",
@@ -1426,6 +1409,250 @@ async function garantirThumbnail(
             "Erro ao criar thumbnail:",
             error
         );
+    }
+}
+
+
+// ==========================================
+// CONSULTAR STATUS DE UMA GERAÇÃO
+// ==========================================
+
+async function consultarStatus(
+    requestId
+) {
+
+    const response =
+        await fetch(
+            `${API_URL}/status?requestId=${encodeURIComponent(
+                requestId
+            )}`
+        );
+
+    const data =
+        await response.json();
+
+    console.log(
+        "Status da geração:",
+        requestId,
+        data
+    );
+
+    if (
+        !response.ok ||
+        !data.sucesso
+    ) {
+
+        throw new Error(
+            data.erro ||
+            "Não foi possível consultar o status do vídeo."
+        );
+    }
+
+    return data.status;
+}
+
+
+// ==========================================
+// ACOMPANHAR GERAÇÃO PENDENTE
+// ==========================================
+
+async function acompanharGeracaoPendente(
+    requestId,
+    mostrarProgresso = true
+) {
+
+    if (!requestId) {
+        return;
+    }
+
+    console.log(
+        "Retomando geração:",
+        requestId
+    );
+
+    let painelCriado =
+        false;
+
+    if (mostrarProgresso) {
+
+        criarPainelProgresso();
+
+        atualizarProgresso(
+            30,
+            "🔄 Retomando geração...",
+            "Encontramos um vídeo que ainda estava sendo processado."
+        );
+
+        iniciarProgressoEstimado(
+            30
+        );
+
+        painelCriado =
+            true;
+    }
+
+    try {
+
+        while (true) {
+
+            const status =
+                await consultarStatus(
+                    requestId
+                );
+
+            // ==========================================
+            // COMPLETO
+            // ==========================================
+
+            if (
+                status === "completed"
+            ) {
+
+                pararProgressoEstimado();
+
+                if (painelCriado) {
+
+                    atualizarProgresso(
+                        96,
+                        "🎬 Vídeo finalizado!",
+                        "Preparando a prévia..."
+                    );
+                }
+
+                // Atualiza histórico
+                await carregarHistorico(
+                    requestId
+                );
+
+                // ==========================================
+                // CRIA THUMBNAIL
+                // ==========================================
+
+                try {
+
+                    if (painelCriado) {
+
+                        atualizarProgresso(
+                            98,
+                            "🖼️ Criando prévia...",
+                            "Gerando a thumbnail do vídeo..."
+                        );
+                    }
+
+                    await gerarThumbnail(
+                        requestId
+                    );
+
+                } catch (thumbnailError) {
+
+                    console.error(
+                        "Erro ao criar thumbnail da geração retomada:",
+                        thumbnailError
+                    );
+                }
+
+                // Atualiza histórico novamente
+                await carregarHistorico(
+                    requestId
+                );
+
+                if (painelCriado) {
+
+                    finalizarProgresso(
+                        true
+                    );
+
+                    setTimeout(
+                        function () {
+
+                            removerPainelProgresso();
+
+                        },
+                        2500
+                    );
+                }
+
+                return true;
+            }
+
+
+            // ==========================================
+            // ERRO
+            // ==========================================
+
+            if (
+                status === "failed" ||
+                status === "nsfw"
+            ) {
+
+                throw new Error(
+                    "A geração terminou com status: " +
+                    status
+                );
+            }
+
+
+            // ==========================================
+            // AINDA PROCESSANDO
+            // ==========================================
+
+            if (painelCriado) {
+
+                atualizarProgresso(
+                    progressoAtual,
+                    "⏳ Gerando vídeo...",
+                    "A IA continua processando sua imagem..."
+                );
+            }
+
+            console.log(
+                "Geração ainda em processamento:",
+                requestId
+            );
+
+            await new Promise(
+                function (resolve) {
+
+                    setTimeout(
+                        resolve,
+                        5000
+                    );
+                }
+            );
+        }
+
+    } catch (error) {
+
+        pararProgressoEstimado();
+
+        console.error(
+            "Erro ao acompanhar geração:",
+            error
+        );
+
+        if (painelCriado) {
+
+            finalizarProgresso(
+                false
+            );
+
+            atualizarProgresso(
+                progressoAtual,
+                "❌ Não foi possível concluir",
+                error.message
+            );
+
+            setTimeout(
+                function () {
+
+                    removerPainelProgresso();
+
+                },
+                3500
+            );
+        }
+
+        return false;
     }
 }
 
@@ -1556,15 +1783,6 @@ async function carregarHistorico(
                     card
                 );
 
-                /*
-                    Para o vídeo novo, a thumbnail
-                    será criada separadamente no
-                    fluxo de geração.
-
-                    Isso evita duas gerações de
-                    thumbnail ao mesmo tempo.
-                */
-
                 if (
                     !item.thumbnail_key &&
                     !ehNovo
@@ -1610,6 +1828,75 @@ async function carregarHistorico(
 
         console.error(
             "Erro ao carregar histórico:",
+            error
+        );
+    }
+}
+
+
+// ==========================================
+// PROCURAR GERAÇÕES PENDENTES AO ABRIR
+// ==========================================
+
+async function verificarGeracoesPendentes() {
+
+    try {
+
+        console.log(
+            "Procurando gerações pendentes..."
+        );
+
+        const response =
+            await fetch(
+                `${API_URL}/history`
+            );
+
+        const data =
+            await response.json();
+
+        if (
+            !response.ok ||
+            !data.sucesso
+        ) {
+
+            console.error(
+                "Não foi possível verificar gerações pendentes."
+            );
+
+            return;
+        }
+
+        const videos =
+            data.videos || [];
+
+        /*
+            IMPORTANTE:
+
+            O /history atual mostra apenas as
+            gerações concluídas.
+
+            Portanto, esta função tenta também
+            consultar os request_ids que estiverem
+            presentes no histórico recebido.
+
+            Para uma recuperação completa de
+            gerações queued que ainda não aparecem
+            no /history, o Worker precisará depois
+            oferecer uma rota específica.
+
+            Por enquanto, não fazemos chamadas
+            aleatórias para não consumir API.
+        */
+
+        console.log(
+            "Gerações encontradas no histórico:",
+            videos.length
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao verificar gerações pendentes:",
             error
         );
     }
@@ -1705,11 +1992,6 @@ generateButton.addEventListener(
             const imageKey =
                 uploadData.arquivo;
 
-            console.log(
-                "Imagem salva:",
-                imageKey
-            );
-
             atualizarProgresso(
                 15,
                 "📤 Imagem enviada!",
@@ -1785,192 +2067,54 @@ generateButton.addEventListener(
                 );
             }
 
-            console.log(
-                "Request ID:",
-                requestId
-            );
-
             atualizarProgresso(
                 25,
                 "⏳ Gerando vídeo...",
                 "A inteligência artificial começou a trabalhar."
             );
 
-            iniciarProgressoEstimado();
+            iniciarProgressoEstimado(
+                25
+            );
 
 
             // ==========================================
-            // 3. CONSULTAR STATUS
+            // 3. ACOMPANHAR GERAÇÃO
             // ==========================================
 
-            let videoConcluido =
-                false;
-
-            while (!videoConcluido) {
-
-                await new Promise(
-                    function (resolve) {
-
-                        setTimeout(
-                            resolve,
-                            5000
-                        );
-                    }
+            const sucesso =
+                await acompanharGeracaoPendente(
+                    requestId,
+                    false
                 );
 
-                const statusResponse =
-                    await fetch(
-                        `${API_URL}/status?requestId=${encodeURIComponent(
-                            requestId
-                        )}`
-                    );
+            if (!sucesso) {
 
-                const statusData =
-                    await statusResponse.json();
-
-                console.log(
-                    "Status da geração:",
-                    statusData
-                );
-
-                if (
-                    !statusResponse.ok ||
-                    !statusData.sucesso
-                ) {
-
-                    throw new Error(
-                        statusData.erro ||
-                        "Não foi possível consultar o status do vídeo."
-                    );
-                }
-
-                const status =
-                    statusData.status;
-
-
-                // ==========================================
-                // VÍDEO PRONTO
-                // ==========================================
-
-                if (
-                    status === "completed"
-                ) {
-
-                    videoConcluido =
-                        true;
-
-                    pararProgressoEstimado();
-
-                    atualizarProgresso(
-                        96,
-                        "🎬 Vídeo finalizado!",
-                        "Preparando a prévia do seu vídeo..."
-                    );
-
-                    generateButton.textContent =
-                        "🎬 Vídeo pronto!";
-
-
-                    // ==========================================
-                    // ATUALIZA HISTÓRICO
-                    // ==========================================
-
-                    await carregarHistorico(
-                        requestId
-                    );
-
-
-                    // ==========================================
-                    // CRIA THUMBNAIL
-                    // ==========================================
-
-                    try {
-
-                        console.log(
-                            "Criando thumbnail do novo vídeo..."
-                        );
-
-                        atualizarProgresso(
-                            98,
-                            "🖼️ Criando prévia...",
-                            "Gerando a thumbnail do vídeo..."
-                        );
-
-                        await gerarThumbnail(
-                            requestId
-                        );
-
-                        await carregarHistorico(
-                            requestId
-                        );
-
-                    } catch (thumbnailError) {
-
-                        console.error(
-                            "Erro ao criar thumbnail do novo vídeo:",
-                            thumbnailError
-                        );
-                    }
-
-
-                    // ==========================================
-                    // 100%
-                    // ==========================================
-
-                    finalizarProgresso(
-                        true
-                    );
-
-                    generateButton.disabled =
-                        false;
-
-                    generateButton.textContent =
-                        "✨ Gerar vídeo";
-
-                    setTimeout(
-                        function () {
-
-                            removerPainelProgresso();
-
-                        },
-                        2500
-                    );
-
-                    return;
-                }
-
-
-                // ==========================================
-                // ERRO
-                // ==========================================
-
-                if (
-                    status === "failed" ||
-                    status === "nsfw"
-                ) {
-
-                    throw new Error(
-                        "A geração do vídeo terminou com status: " +
-                        status
-                    );
-                }
-
-
-                // ==========================================
-                // PROCESSANDO
-                // ==========================================
-
-                atualizarProgresso(
-                    progressoAtual,
-                    "⏳ Gerando vídeo...",
-                    "A IA ainda está processando sua imagem..."
-                );
-
-                console.log(
-                    "Vídeo ainda sendo processado..."
+                throw new Error(
+                    "Não foi possível acompanhar a geração do vídeo."
                 );
             }
 
+            pararProgressoEstimado();
+
+            finalizarProgresso(
+                true
+            );
+
+            generateButton.disabled =
+                false;
+
+            generateButton.textContent =
+                "✨ Gerar vídeo";
+
+            setTimeout(
+                function () {
+
+                    removerPainelProgresso();
+
+                },
+                2500
+            );
 
         } catch (error) {
 
@@ -2018,7 +2162,23 @@ generateButton.addEventListener(
 
 
 // ==========================================
-// CARREGAR HISTÓRICO AO ABRIR
+// INICIALIZAÇÃO
 // ==========================================
 
-carregarHistorico();
+async function iniciarAplicativo() {
+
+    console.log(
+        "Iniciando aplicativo..."
+    );
+
+    await carregarHistorico();
+
+    await verificarGeracoesPendentes();
+
+    console.log(
+        "Aplicativo pronto."
+    );
+}
+
+
+iniciarAplicativo();
