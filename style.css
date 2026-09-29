@@ -1,8 +1,17 @@
+/* ==========================================
+   RESET
+========================================== */
+
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
+
+
+/* ==========================================
+   BODY
+========================================== */
 
 body {
     font-family: Arial, sans-serif;
@@ -11,12 +20,22 @@ body {
     min-height: 100vh;
 }
 
+
+/* ==========================================
+   APP
+========================================== */
+
 .app {
     width: 100%;
-    max-width: 800px;
+    max-width: 1100px;
     margin: auto;
-    padding: 60px 20px;
+    padding: 50px 20px;
 }
+
+
+/* ==========================================
+   HEADER
+========================================== */
 
 header {
     text-align: center;
@@ -33,11 +52,21 @@ header p {
     font-size: 17px;
 }
 
+
+/* ==========================================
+   GERADOR
+========================================== */
+
 .generator {
     background: #1a1a1a;
     border-radius: 20px;
     padding: 30px;
 }
+
+
+/* ==========================================
+   ÁREA DE UPLOAD
+========================================== */
 
 .upload-area {
     border: 2px dashed #444;
@@ -45,6 +74,12 @@ header p {
     padding: 45px 20px;
     text-align: center;
     cursor: pointer;
+    transition: 0.2s;
+}
+
+.upload-area:hover {
+    border-color: #777;
+    background: #1d1d1d;
 }
 
 .upload-area .icon {
@@ -61,6 +96,11 @@ header p {
     margin-bottom: 20px;
 }
 
+
+/* ==========================================
+   BOTÃO DE UPLOAD
+========================================== */
+
 .upload-button {
     display: inline-block;
     background: #ffffff;
@@ -70,6 +110,11 @@ header p {
     cursor: pointer;
     font-weight: bold;
 }
+
+
+/* ==========================================
+   PROMPT
+========================================== */
 
 .prompt-area {
     margin-top: 30px;
@@ -94,6 +139,15 @@ header p {
     outline: none;
 }
 
+.prompt-area textarea:focus {
+    border-color: #777;
+}
+
+
+/* ==========================================
+   BOTÃO GERAR
+========================================== */
+
 .generate-button {
     width: 100%;
     margin-top: 25px;
@@ -105,8 +159,243 @@ header p {
     font-size: 17px;
     font-weight: bold;
     cursor: pointer;
+    transition: 0.2s;
 }
 
 .generate-button:hover {
     opacity: 0.85;
+}
+
+.generate-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+
+/* ==========================================
+   RESULTADO ATUAL
+========================================== */
+
+.video-resultado {
+    width: 100%;
+    max-width: 500px;
+    max-height: 650px;
+    display: block;
+    margin: 30px auto;
+    border-radius: 15px;
+}
+
+
+/* ==========================================
+   HISTÓRICO
+========================================== */
+
+#historicoVideos {
+    margin-top: 55px;
+    padding-top: 35px;
+    border-top: 1px solid #333;
+}
+
+.historico-titulo {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.historico-titulo h2 {
+    font-size: 28px;
+    margin-bottom: 8px;
+}
+
+.historico-titulo p {
+    color: #888;
+    font-size: 14px;
+}
+
+
+/* ==========================================
+   GRID DOS CARDS
+========================================== */
+
+.historico-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 25px;
+}
+
+
+/* ==========================================
+   CARD
+========================================== */
+
+.video-card {
+    background: #111;
+    border: 1px solid #2c2c2c;
+    border-radius: 18px;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.video-card:hover {
+    transform: translateY(-3px);
+    border-color: #555;
+}
+
+
+/* ==========================================
+   CARD RECÉM-GERADO
+========================================== */
+
+.video-card.novo {
+    border-color: #ffffff;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+
+/* ==========================================
+   ETIQUETA
+========================================== */
+
+.video-card-topo {
+    padding: 14px 16px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.video-card-titulo {
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.video-card-novo {
+    background: white;
+    color: #111;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 5px 8px;
+    border-radius: 7px;
+    white-space: nowrap;
+}
+
+
+/* ==========================================
+   VÍDEO DO CARD
+========================================== */
+
+.video-card video {
+    width: 100%;
+    max-height: 600px;
+    display: block;
+    background: #000;
+}
+
+
+/* ==========================================
+   INFORMAÇÕES DO CARD
+========================================== */
+
+.video-card-info {
+    padding: 15px 16px 16px;
+}
+
+.video-card-data {
+    color: #888;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+
+/* ==========================================
+   PROMPT
+========================================== */
+
+.video-card-prompt {
+    color: #bbb;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 15px;
+}
+
+.video-card-prompt summary {
+    cursor: pointer;
+    color: #ddd;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.video-card-prompt p {
+    margin-top: 10px;
+    color: #999;
+}
+
+
+/* ==========================================
+   AÇÕES
+========================================== */
+
+.video-card-acoes {
+    display: flex;
+    gap: 10px;
+}
+
+.video-card-acoes button,
+.video-card-acoes a {
+    flex: 1;
+    text-align: center;
+    text-decoration: none;
+    border: 1px solid #444;
+    background: #1b1b1b;
+    color: white;
+    padding: 10px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.video-card-acoes button:hover,
+.video-card-acoes a:hover {
+    background: #292929;
+    border-color: #666;
+}
+
+
+/* ==========================================
+   RESPONSIVIDADE
+========================================== */
+
+@media (max-width: 700px) {
+
+    .app {
+        padding: 30px 12px;
+    }
+
+    header h1 {
+        font-size: 32px;
+    }
+
+    header p {
+        font-size: 15px;
+    }
+
+    .generator {
+        padding: 18px;
+        border-radius: 16px;
+    }
+
+    .historico-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .historico-titulo h2 {
+        font-size: 24px;
+    }
+
+    .video-card video {
+        max-height: 650px;
+    }
+
 }
