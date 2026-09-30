@@ -5,6 +5,216 @@ const generateButton = document.getElementById("generateButton");
 
 const API_URL =
     "https://app-video-ia-api.app-video-ia.workers.dev";
+const AUTH_TOKEN_KEY = "app_video_ia_token";
+
+function obterToken() {
+    return sessionStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+function salvarToken(token) {
+    sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+}
+
+function removerToken() {
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
+}
+
+async function fazerLogin(senha) {
+    try {
+        const response = await fetch(`${API_URL}/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                password: senha
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.sucesso || !data.token) {
+            return {
+                sucesso: false,
+                erro: data.erro || "Senha incorreta."
+            };
+        }
+
+        salvarToken(data.token);
+
+        return {
+            sucesso: true
+        };
+    } catch (error) {
+        console.error("Erro ao fazer login:", error);
+
+        return {
+            sucesso: false,
+            erro: "Não foi possível conectar ao servidor."
+        };
+    }
+}
+
+async function fetchAutenticado(url, options = {}) {
+    const token = obterToken();
+
+    const headers = new Headers(options.headers || {});
+
+    if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    const response = await fetch(url, {
+        ...options,
+        headers
+    });
+
+    if (response.status === 401) {
+        removerToken();
+        mostrarTelaLogin();
+        throw new Error("Sessão expirada.");
+    }
+
+    return response;
+}
+
+function mostrarTelaLogin() {
+    let tela = document.getElementById("telaLogin");
+
+    if (!tela) {
+        tela = document.createElement("div");
+        tela.id = "telaLogin";
+
+        tela.innerHTML = `
+            <div style="
+                position:fixed;
+                inset:0;
+                background:#111;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                z-index:99999;
+                padding:20px;
+            ">
+                <div style="
+                    width:100%;
+                    max-width:380px;
+                    background:#1c1c1c;
+                    padding:30px;
+                    border-radius:16px;
+                    box-shadow:0 20px 60px rgba(0,0,0,.5);
+                    text-align:center;
+                ">
+                    <h2 style="margin-top:0;color:white;">
+                        🎬 AI Video
+                    </h2>
+
+                    <p style="color:#aaa;margin-bottom:25px;">
+                        Digite sua senha para acessar.
+                    </p>
+
+                    <input
+                        id="senhaLogin"
+                        type="password"
+                        placeholder="Senha"
+                        autocomplete="current-password"
+                        style="
+                            width:100%;
+                            box-sizing:border-box;
+                            padding:14px;
+                            border-radius:8px;
+                            border:1px solid #444;
+                            background:#111;
+                            color:white;
+                            margin-bottom:12px;
+                        "
+                    >
+
+                    <button
+                        id="botaoLogin"
+                        style="
+                            width:100%;
+                            padding:14px;
+                            border:none;
+                            border-radius:8px;
+                            cursor:pointer;
+                            font-weight:bold;
+                        "
+                    >
+                        Entrar
+                    </button>
+
+                    <div
+                        id="erroLogin"
+                        style="
+                            color:#ff6b6b;
+                            margin-top:15px;
+                            min-height:20px;
+                        "
+                    ></div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(tela);
+
+        document.getElementById("botaoLogin")
+            .addEventListener("click", realizarLogin);
+
+        document.getElementById("senhaLogin")
+            .addEventListener("keydown", event => {
+                if (event.key === "Enter") {
+                    realizarLogin();
+                }
+            });
+    }
+
+    tela.style.display = "block";
+
+    setTimeout(() => {
+        const input = document.getElementById("senhaLogin");
+        if (input) input.focus();
+    }, 100);
+}
+
+function esconderTelaLogin() {
+    const tela = document.getElementById("telaLogin");
+
+    if (tela) {
+        tela.style.display = "none";
+    }
+}
+
+async function realizarLogin() {
+    const input = document.getElementById("senhaLogin");
+    const botao = document.getElementById("botaoLogin");
+    const erro = document.getElementById("erroLogin");
+
+    const senha = input.value;
+
+    if (!senha) {
+        erro.textContent = "Digite a senha.";
+        return;
+    }
+
+    botao.disabled = true;
+    botao.textContent = "Entrando...";
+    erro.textContent = "";
+
+    const resultado = await fazerLogin(senha);
+
+    if (resultado.sucesso) {
+        esconderTelaLogin();
+        iniciarAplicativo();
+        return;
+    }
+
+    erro.textContent = resultado.erro || "Senha incorreta.";
+    botao.disabled = false;
+    botao.textContent = "Entrar";
+    input.focus();
+}
+
 
 let selectedImage = null;
 
@@ -500,7 +710,7 @@ async function baixarVideo(
             "⏳ Baixando...";
 
         const response =
-            await fetch(
+            await fetchAutenticado(
                 videoURL
             );
 
@@ -799,7 +1009,7 @@ async function gerarThumbnail(
                         );
 
                         const response =
-                            await fetch(
+                            await fetchAutenticado(
                                 `${API_URL}/thumbnail?requestId=${encodeURIComponent(
                                     requestId
                                 )}`,
@@ -1422,7 +1632,7 @@ async function consultarStatus(
 ) {
 
     const response =
-        await fetch(
+        await fetchAutenticado(
             `${API_URL}/status?requestId=${encodeURIComponent(
                 requestId
             )}`
@@ -1672,7 +1882,7 @@ async function carregarHistorico(
         );
 
         const response =
-            await fetch(
+            await fetchAutenticado(
                 `${API_URL}/history`
             );
 
@@ -1842,7 +2052,7 @@ async function verificarGeracoesPendentes() {
     try {
         console.log("Procurando gerações pendentes...");
 
-        const response = await fetch(`${API_URL}/pending`);
+        const response = await fetchAutenticado(`${API_URL}/pending`);
         const data = await response.json();
 
         if (!response.ok || !data.sucesso) {
@@ -1934,7 +2144,7 @@ generateButton.addEventListener(
             // ==========================================
 
             const uploadResponse =
-                await fetch(
+                await fetchAutenticado(
                     `${API_URL}/upload`,
                     {
                         method:
@@ -1990,7 +2200,7 @@ generateButton.addEventListener(
             );
 
             const generationResponse =
-                await fetch(
+                await fetchAutenticado(
                     `${API_URL}/generate`,
                     {
                         method:
@@ -2161,4 +2371,8 @@ async function iniciarAplicativo() {
 }
 
 
-iniciarAplicativo();
+if (obterToken()) {
+    iniciarAplicativo();
+} else {
+    mostrarTelaLogin();
+}
