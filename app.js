@@ -6,6 +6,7 @@ const generateButton = document.getElementById("generateButton");
 const API_URL =
     "https://app-video-ia-api.app-video-ia.workers.dev";
 const AUTH_TOKEN_KEY = "app_video_ia_token";
+const AUTH_EMAIL_KEY = "app_video_ia_email";
 
 function obterToken() {
     return sessionStorage.getItem(AUTH_TOKEN_KEY);
@@ -19,7 +20,7 @@ function removerToken() {
     sessionStorage.removeItem(AUTH_TOKEN_KEY);
 }
 
-async function fazerLogin(senha) {
+async function fazerLogin(email, senha) {
     try {
         const response = await fetch(`${API_URL}/login`, {
             method: "POST",
@@ -27,6 +28,7 @@ async function fazerLogin(senha) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
+                email: email,
                 password: senha
             })
         });
@@ -36,14 +38,22 @@ async function fazerLogin(senha) {
         if (!response.ok || !data.sucesso || !data.token) {
             return {
                 sucesso: false,
-                erro: data.erro || "Senha incorreta."
+                erro: data.erro || "E-mail ou senha incorretos."
             };
         }
 
         salvarToken(data.token);
 
+        // Guarda apenas o e-mail desta sessão no navegador.
+        // A autenticação real continua sendo feita pelo token do servidor.
+        sessionStorage.setItem(
+            AUTH_EMAIL_KEY,
+            data.email || email
+        );
+
         return {
-            sucesso: true
+            sucesso: true,
+            email: data.email || email
         };
     } catch (error) {
         console.error("Erro ao fazer login:", error);
@@ -71,6 +81,7 @@ async function fetchAutenticado(url, options = {}) {
 
     if (response.status === 401) {
         removerToken();
+        sessionStorage.removeItem(AUTH_EMAIL_KEY);
         mostrarTelaLogin();
         throw new Error("Sessão expirada.");
     }
@@ -110,8 +121,25 @@ function mostrarTelaLogin() {
                     </h2>
 
                     <p style="color:#aaa;margin-bottom:25px;">
-                        Digite sua senha para acessar.
+                        Entre na sua conta para acessar.
                     </p>
+
+                    <input
+                        id="emailLogin"
+                        type="email"
+                        placeholder="E-mail"
+                        autocomplete="username"
+                        style="
+                            width:100%;
+                            box-sizing:border-box;
+                            padding:14px;
+                            border-radius:8px;
+                            border:1px solid #444;
+                            background:#111;
+                            color:white;
+                            margin-bottom:12px;
+                        "
+                    >
 
                     <input
                         id="senhaLogin"
@@ -161,6 +189,13 @@ function mostrarTelaLogin() {
         document.getElementById("botaoLogin")
             .addEventListener("click", realizarLogin);
 
+        document.getElementById("emailLogin")
+            .addEventListener("keydown", event => {
+                if (event.key === "Enter") {
+                    document.getElementById("senhaLogin").focus();
+                }
+            });
+
         document.getElementById("senhaLogin")
             .addEventListener("keydown", event => {
                 if (event.key === "Enter") {
@@ -171,9 +206,17 @@ function mostrarTelaLogin() {
 
     tela.style.display = "block";
 
+    const emailInput = document.getElementById("emailLogin");
+    const senhaInput = document.getElementById("senhaLogin");
+    const emailSalvo = sessionStorage.getItem(AUTH_EMAIL_KEY);
+
     setTimeout(() => {
-        const input = document.getElementById("senhaLogin");
-        if (input) input.focus();
+        if (emailInput && emailSalvo) {
+            emailInput.value = emailSalvo;
+            if (senhaInput) senhaInput.focus();
+        } else if (emailInput) {
+            emailInput.focus();
+        }
     }, 100);
 }
 
@@ -186,14 +229,29 @@ function esconderTelaLogin() {
 }
 
 async function realizarLogin() {
-    const input = document.getElementById("senhaLogin");
+    const emailInput = document.getElementById("emailLogin");
+    const senhaInput = document.getElementById("senhaLogin");
     const botao = document.getElementById("botaoLogin");
     const erro = document.getElementById("erroLogin");
 
-    const senha = input.value;
+    const email = emailInput.value.trim().toLowerCase();
+    const senha = senhaInput.value;
+
+    if (!email) {
+        erro.textContent = "Digite seu e-mail.";
+        emailInput.focus();
+        return;
+    }
+
+    if (!email.includes("@")) {
+        erro.textContent = "Digite um e-mail válido.";
+        emailInput.focus();
+        return;
+    }
 
     if (!senha) {
-        erro.textContent = "Digite a senha.";
+        erro.textContent = "Digite sua senha.";
+        senhaInput.focus();
         return;
     }
 
@@ -201,7 +259,7 @@ async function realizarLogin() {
     botao.textContent = "Entrando...";
     erro.textContent = "";
 
-    const resultado = await fazerLogin(senha);
+    const resultado = await fazerLogin(email, senha);
 
     if (resultado.sucesso) {
         esconderTelaLogin();
@@ -209,12 +267,11 @@ async function realizarLogin() {
         return;
     }
 
-    erro.textContent = resultado.erro || "Senha incorreta.";
+    erro.textContent = resultado.erro || "E-mail ou senha incorretos.";
     botao.disabled = false;
     botao.textContent = "Entrar";
-    input.focus();
+    senhaInput.focus();
 }
-
 
 let selectedImage = null;
 
